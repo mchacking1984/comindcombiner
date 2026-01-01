@@ -26,6 +26,10 @@ const ASSETS = {
   // US Yields (only reliable ones)
   'US 10-Year Yield': { yahoo: '^TNX', category: 'FIXED INCOME', isYield: true },
   'US 30-Year Yield': { yahoo: '^TYX', category: 'FIXED INCOME', isYield: true },
+  // International Yields (via MarketWatch)
+  'JGB 10-Year Yield': { marketwatch: 'tmbmkjp-10y', countryCode: 'bx', category: 'FIXED INCOME', isYield: true },
+  'German 10-Year Yield': { marketwatch: 'tmbmkde-10y', countryCode: 'bx', category: 'FIXED INCOME', isYield: true },
+  'UK 10-Year Gilt': { marketwatch: 'tmbmkgb-10y', countryCode: 'bx', category: 'FIXED INCOME', isYield: true },
 };
 
 async function fetchYahooChart(symbol, targetDate) {
@@ -84,16 +88,107 @@ async function fetchYahooChart(symbol, targetDate) {
   }
 }
 
+// Fetch bond yield data from MarketWatch CSV download
+async function fetchMarketWatchBond(symbol, countryCode, targetDate) {
+  try {
+    // Build date range: 14 days before target to target date
+    const endDate = new Date(targetDate + 'T23:59:59Z');
+    const startDate = new Date(targetDate + 'T00:00:00Z');
+    startDate.setDate(startDate.getDate() - 14);
+
+    // Format dates as MM/DD/YYYY for MarketWatch URL
+    const formatMWDate = (date) => {
+      const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+      const day = String(date.getUTCDate()).padStart(2, '0');
+      const year = date.getUTCFullYear();
+      return `${month}/${day}/${year}`;
+    };
+
+    const startStr = encodeURIComponent(formatMWDate(startDate) + ' 00:00:00');
+    const endStr = encodeURIComponent(formatMWDate(endDate) + ' 23:59:59');
+
+    const url = `https://www.marketwatch.com/investing/bond/${symbol}/downloaddatapartial?startdate=${startStr}&enddate=${endStr}&daterange=d30&frequency=p1d&csvdownload=true&downloadpartial=false&newdates=false&countrycode=${countryCode}`;
+
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/csv,application/csv,text/plain,*/*',
+        'Accept-Language': 'en-US,en;q=0.9',
+      },
+    });
+
+    if (!response.ok) return null;
+
+    const csvText = await response.text();
+    if (!csvText || csvText.includes('<!DOCTYPE') || csvText.includes('<html')) {
+      // Got HTML instead of CSV - likely blocked or error page
+      return null;
+    }
+
+    // Parse CSV: expected format is "Date,Open,High,Low,Close" (no Volume for bonds)
+    const lines = csvText.trim().split('\n');
+    if (lines.length < 2) return null;
+
+    // Skip header row and parse data rows
+    const dailyData = [];
+    for (let i = 1; i < lines.length; i++) {
+      const cols = lines[i].split(',');
+      if (cols.length >= 5) {
+        // Date is in MM/DD/YYYY format, Close is the 5th column (index 4)
+        const dateStr = cols[0].trim();
+        const closeStr = cols[4].trim();
+        const close = parseFloat(closeStr);
+
+        if (!isNaN(close)) {
+          // Convert MM/DD/YYYY to YYYY-MM-DD for comparison
+          const dateParts = dateStr.split('/');
+          if (dateParts.length === 3) {
+            const isoDate = `${dateParts[2]}-${dateParts[0].padStart(2, '0')}-${dateParts[1].padStart(2, '0')}`;
+            if (isoDate <= targetDate) {
+              dailyData.push({ date: isoDate, close });
+            }
+          }
+        }
+      }
+    }
+
+    // Sort chronologically
+    dailyData.sort((a, b) => a.date.localeCompare(b.date));
+
+    if (dailyData.length === 0) return null;
+
+    const targetData = dailyData[dailyData.length - 1];
+    const prevData = dailyData.length > 1 ? dailyData[dailyData.length - 2] : null;
+
+    let percentChange = null;
+    if (prevData && prevData.close !== 0) {
+      percentChange = ((targetData.close - prevData.close) / prevData.close) * 100;
+    }
+
+    return {
+      close: targetData.close,
+      previousClose: prevData?.close,
+      percentChange,
+      date: targetData.date,
+    };
+  } catch (err) {
+    console.error(`MarketWatch fetch error for ${symbol}:`, err.message);
+    return null;
+  }
+}
+
 async function fetchVerifiedData(targetDate) {
   const results = {};
-  
+
   for (const [assetName, config] of Object.entries(ASSETS)) {
     let data = null;
-    
+
     if (config.yahoo) {
       data = await fetchYahooChart(config.yahoo, targetDate);
+    } else if (config.marketwatch) {
+      data = await fetchMarketWatchBond(config.marketwatch, config.countryCode || 'bx', targetDate);
     }
-    
+
     if (data) {
       results[assetName] = {
         ...data,
@@ -214,7 +309,7 @@ OUTPUT FORMAT:
 *[One italic sentence summarizing the rates theme]*
 
 • The **U.S.** 10-year yield [USE VERIFIED YIELD AND BPS CHANGE]. [Curve context].
-• [Other relevant yield commentary].
+• **Global yields**: [USE VERIFIED INTERNATIONAL YIELD DATA for JGB, Bund, Gilt if available]. [Note divergence or convergence with US rates].
 
 ---
 
