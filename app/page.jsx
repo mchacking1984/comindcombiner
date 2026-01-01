@@ -199,7 +199,12 @@ ${finalContent}`;
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-6 border-b border-slate-700 pb-4">
-          <h1 className="text-2xl font-bold">Morning Pulse Consolidator</h1>
+          <div className="flex items-center justify-between">
+            <h1 className="text-2xl font-bold">Morning Pulse Consolidator</h1>
+            <span className="text-xs bg-slate-700 text-slate-300 px-2 py-1 rounded font-mono">
+              Powered by gemini-3-pro-preview
+            </span>
+          </div>
           <p className="text-slate-400 text-sm mt-1">
             Paste outputs from the Prompt Generator workflow → Synthesize into final Morning Pulse
           </p>
