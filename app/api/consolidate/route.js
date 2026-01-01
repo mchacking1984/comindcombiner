@@ -319,6 +319,7 @@ OUTPUT FORMAT:
 
 • **Gold** [USE VERIFIED GOLD FIGURE with context].
 • **Oil** [USE VERIFIED WTI/BRENT FIGURES with context].
+• **Copper** [USE VERIFIED COPPER FIGURE with context - note its role as economic bellwether].
 
 ---
 

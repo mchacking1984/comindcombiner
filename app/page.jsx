@@ -24,7 +24,8 @@ export default function Home() {
   const thinkingOptions = {
     fast: { budget: 10000, label: 'Fast', desc: '~30s' },
     standard: { budget: 16000, label: 'Standard', desc: '~45s' },
-    deep: { budget: 20000, label: 'Deep', desc: '~60s' },
+    deep: { budget: 24000, label: 'Deep', desc: '~60s' },
+    max: { budget: 32000, label: 'Max', desc: '~90s' },
   };
 
   const formatDate = (dateString) => {
