@@ -168,6 +168,54 @@ ${finalContent}`;
       .replace(/\n/g, '<br />');
   };
 
+  const copyForGhost = async () => {
+    try {
+      const ghostHtml = renderMarkdownForGhost(output);
+      await navigator.clipboard.writeText(ghostHtml);
+    } catch (err) {
+      await navigator.clipboard.writeText(output);
+    }
+  };
+
+  // Convert markdown to clean HTML for Ghost editor
+  const renderMarkdownForGhost = (text) => {
+    if (!text) return '';
+
+    let html = text
+      // Headers
+      .replace(/^### (.*$)/gm, '<h3>$1</h3>')
+      .replace(/^## (.*$)/gm, '<h2>$1</h2>')
+      .replace(/^# (.*$)/gm, '<h1>$1</h1>')
+      // Horizontal rules
+      .replace(/^---$/gm, '<hr>')
+      // Bold and italic combinations
+      .replace(/\*\*\*(.*?)\*\*\*/g, '<strong><em>$1</em></strong>')
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<em>$1</em>')
+      // Bullet points - collect into proper ul
+      .replace(/^\* (.*)$/gm, '<li>$1</li>');
+
+    // Wrap consecutive li elements in ul tags
+    html = html.replace(/(<li>.*?<\/li>\n?)+/g, (match) => {
+      return '<ul>\n' + match + '</ul>\n';
+    });
+
+    // Handle paragraphs - split by double newlines
+    const blocks = html.split(/\n\n+/);
+    html = blocks.map(block => {
+      block = block.trim();
+      if (!block) return '';
+      // Don't wrap if already a block element
+      if (block.startsWith('<h') || block.startsWith('<ul') || block.startsWith('<hr') || block.startsWith('<li')) {
+        return block;
+      }
+      // Wrap plain text in paragraph, convert single newlines to <br>
+      return '<p>' + block.replace(/\n/g, '<br>') + '</p>';
+    }).filter(Boolean).join('\n\n');
+
+    return html;
+  };
+
   // Render markdown for display
   const renderMarkdown = (text) => {
     if (!text) return '';
@@ -345,12 +393,20 @@ ${finalContent}`;
           <div className="bg-slate-800 rounded-lg border border-slate-700 overflow-hidden mb-6">
             <div className="bg-slate-700 px-4 py-3 flex items-center justify-between">
               <h3 className="font-semibold">Generated Morning Pulse</h3>
-              <button
-                onClick={copyToClipboard}
-                className="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 rounded text-sm font-medium transition-colors"
-              >
-                Copy for Substack
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={copyToClipboard}
+                  className="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 rounded text-sm font-medium transition-colors"
+                >
+                  Copy for Substack
+                </button>
+                <button
+                  onClick={copyForGhost}
+                  className="px-4 py-1.5 bg-purple-600 hover:bg-purple-500 rounded text-sm font-medium transition-colors"
+                >
+                  Copy for Ghost
+                </button>
+              </div>
             </div>
             <div
               className="p-6 prose prose-invert max-w-none"
