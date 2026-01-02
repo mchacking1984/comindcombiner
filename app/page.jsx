@@ -12,6 +12,7 @@ export default function Home() {
   const [chatgptInput, setChatgptInput] = useState('');
   const [geminiInput, setGeminiInput] = useState('');
   const [claudeInput, setClaudeInput] = useState('');
+  const [deepresearchInput, setDeepresearchInput] = useState('');
   const [pulseDate, setPulseDate] = useState(getYesterday());
   const [output, setOutput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -58,8 +59,9 @@ export default function Home() {
   };
 
   const consolidate = async () => {
-    if (!chatgptInput && !geminiInput && !claudeInput) {
-      setError('Please paste at least one research source');
+    const inputCount = [chatgptInput, geminiInput, claudeInput, deepresearchInput].filter(Boolean).length;
+    if (inputCount < 2) {
+      setError('Please paste at least two research sources to combine');
       return;
     }
 
@@ -82,6 +84,7 @@ export default function Home() {
           chatgptInput,
           geminiInput,
           claudeInput,
+          deepresearchInput,
           formattedDate,
           targetDate: pulseDate,
           thinkingBudget: currentThinking.budget,
@@ -225,7 +228,7 @@ ${finalContent}`;
         </div>
 
         {/* Input Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           {/* ChatGPT Input */}
           <div className="bg-slate-800 rounded-lg border border-slate-700 overflow-hidden">
             <div className="bg-emerald-700 px-4 py-2">
@@ -264,6 +267,20 @@ ${finalContent}`;
               value={claudeInput}
               onChange={(e) => setClaudeInput(e.target.value)}
               placeholder="Paste Claude's output here..."
+              className="w-full h-48 p-3 bg-slate-900 text-slate-200 text-sm resize-none focus:outline-none"
+            />
+          </div>
+
+          {/* DeepResearch Input */}
+          <div className="bg-slate-800 rounded-lg border border-slate-700 overflow-hidden">
+            <div className="bg-purple-700 px-4 py-2">
+              <h3 className="font-semibold text-white">DeepResearch Output</h3>
+              <p className="text-xs text-purple-200">Deep web research & sourcing</p>
+            </div>
+            <textarea
+              value={deepresearchInput}
+              onChange={(e) => setDeepresearchInput(e.target.value)}
+              placeholder="Paste DeepResearch output here..."
               className="w-full h-48 p-3 bg-slate-900 text-slate-200 text-sm resize-none focus:outline-none"
             />
           </div>
@@ -352,7 +369,7 @@ ${finalContent}`;
               </li>
               <li className="flex gap-3">
                 <span className="bg-blue-600 w-6 h-6 rounded-full flex items-center justify-center text-sm font-medium shrink-0">2</span>
-                <span>Run each prompt in ChatGPT, Gemini, and Claude's deep research</span>
+                <span>Run each prompt in ChatGPT, Gemini, Claude, and/or DeepResearch</span>
               </li>
               <li className="flex gap-3">
                 <span className="bg-blue-600 w-6 h-6 rounded-full flex items-center justify-center text-sm font-medium shrink-0">3</span>
@@ -370,9 +387,10 @@ ${finalContent}`;
                 <li><strong className="text-emerald-400">ChatGPT:</strong> Often good at surfacing news events, headlines, and single-stock moves</li>
                 <li><strong className="text-blue-400">Gemini:</strong> Tends to be strong on quantitative relationships and cross-asset analysis</li>
                 <li><strong className="text-orange-400">Claude:</strong> Often offers regime-level thinking and non-consensus interpretation</li>
+                <li><strong className="text-purple-400">DeepResearch:</strong> Provides deep web research with sourced information and citations</li>
               </ul>
               <p className="text-xs text-slate-500 mt-2">
-                The consolidator blends insights from all three based on quality, not strict assignment.
+                Paste any combination of 2+ sources. The consolidator blends insights based on quality, not strict assignment.
               </p>
             </div>
 

@@ -267,12 +267,13 @@ From the LLM outputs, extract only:
 - Crypto analysis: ETF flows, macro correlation, BTC/ETH divergence (don't treat crypto as an afterthought)
 
 CONTEXT ON SOURCES:
-Each LLM was asked to approach the analysis differently:
+You may receive outputs from any combination of these LLMs (at least 2):
 - **ChatGPT** tends to surface news events, headlines, and single-stock moves well
 - **Gemini** tends to be strong on quantitative relationships and cross-asset transmission
 - **Claude** tends to offer regime-level thinking and non-consensus interpretation
+- **DeepResearch** provides sourced facts, citations, and deep web research findings
 
-Use this as a guide, not a strict rule. Blend insights from whichever source has the best analysis.
+Use this as a guide, not a strict rule. Blend insights from whichever sources are provided based on quality of analysis.
 
 TONE AND STYLE:
 - Be analytical and precise, not dramatic
@@ -425,26 +426,38 @@ export async function POST(request) {
     }
 
     if (step === 'consolidate') {
-      const { chatgptInput, geminiInput, claudeInput } = body;
+      const { chatgptInput, geminiInput, claudeInput, deepresearchInput } = body;
 
       // Fetch verified market data
       const verifiedData = await fetchVerifiedData(targetDate);
       const formattedVerifiedData = formatVerifiedDataForPrompt(verifiedData);
 
-      const userPrompt = `Synthesize these three research outputs into the Co-Mind Morning Pulse for ${formattedDate}.
+      // Build dynamic sections based on which inputs are provided
+      const sections = [];
+      if (chatgptInput) {
+        sections.push(`=== CHATGPT OUTPUT (use for: news events, single-stock moves, sector analysis) ===
+${chatgptInput}`);
+      }
+      if (geminiInput) {
+        sections.push(`=== GEMINI OUTPUT (use for: cross-asset flow analysis, transmission mechanisms) ===
+${geminiInput}`);
+      }
+      if (claudeInput) {
+        sections.push(`=== CLAUDE OUTPUT (use for: regime interpretation, non-obvious insights) ===
+${claudeInput}`);
+      }
+      if (deepresearchInput) {
+        sections.push(`=== DEEPRESEARCH OUTPUT (use for: sourced facts, citations, deep web research) ===
+${deepresearchInput}`);
+      }
+
+      const userPrompt = `Synthesize the following research outputs into the Co-Mind Morning Pulse for ${formattedDate}.
 
 IMPORTANT: The LLM outputs below may contain incorrect numbers. Use them ONLY for narrative and analysis.
 
 For ALL numerical data (prices, levels, percentage changes, basis points), use ONLY the VERIFIED DATA provided at the end.
 
-=== CHATGPT OUTPUT (use for: news events, single-stock moves, sector analysis) ===
-${chatgptInput || 'Not provided'}
-
-=== GEMINI OUTPUT (use for: cross-asset flow analysis, transmission mechanisms) ===
-${geminiInput || 'Not provided'}
-
-=== CLAUDE OUTPUT (use for: regime interpretation, non-obvious insights) ===
-${claudeInput || 'Not provided'}
+${sections.join('\n\n')}
 
 === VERIFIED MARKET DATA — USE THESE EXACT FIGURES ===
 ${formattedVerifiedData}
