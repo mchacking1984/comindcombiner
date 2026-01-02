@@ -27,13 +27,10 @@ const ASSETS = {
   'USD/JPY': { yahoo: 'JPY=X', category: 'CURRENCIES' },
   'Bitcoin': { yahoo: 'BTC-USD', category: 'DIGITAL ASSETS' },
   'Ethereum': { yahoo: 'ETH-USD', category: 'DIGITAL ASSETS' },
-  // US Yields (only reliable ones)
+  // US Yields via Yahoo Finance
   'US 10-Year Yield': { yahoo: '^TNX', category: 'FIXED INCOME', isYield: true },
   'US 30-Year Yield': { yahoo: '^TYX', category: 'FIXED INCOME', isYield: true },
-  // International Yields (via MarketWatch)
-  'JGB 10-Year Yield': { marketwatch: 'tmbmkjp-10y', countryCode: 'bx', category: 'FIXED INCOME', isYield: true },
-  'German 10-Year Yield': { marketwatch: 'tmbmkde-10y', countryCode: 'bx', category: 'FIXED INCOME', isYield: true },
-  'UK 10-Year Gilt': { marketwatch: 'tmbmkgb-10y', countryCode: 'bx', category: 'FIXED INCOME', isYield: true },
+  // International yields fetched separately via yields API
 };
 
 async function fetchYahooChart(symbol, targetDate) {
@@ -92,121 +89,109 @@ async function fetchYahooChart(symbol, targetDate) {
   }
 }
 
-// Fetch bond yield data from MarketWatch CSV download
-async function fetchMarketWatchBond(symbol, countryCode, targetDate) {
+// Fetch international bond yields from external yields API
+async function fetchInternationalYields(targetDate) {
+  const yieldsApiUrl = process.env.YIELDS_API_URL;
+  if (!yieldsApiUrl) {
+    console.log('YIELDS_API_URL not configured, skipping international yields');
+    return {};
+  }
+
   try {
-    // Build date range: 14 days before target to target date
-    const endDate = new Date(targetDate + 'T23:59:59Z');
-    const startDate = new Date(targetDate + 'T00:00:00Z');
-    startDate.setDate(startDate.getDate() - 14);
-
-    // Format dates as MM/DD/YYYY for MarketWatch URL
-    const formatMWDate = (date) => {
-      const month = String(date.getUTCMonth() + 1).padStart(2, '0');
-      const day = String(date.getUTCDate()).padStart(2, '0');
-      const year = date.getUTCFullYear();
-      return `${month}/${day}/${year}`;
-    };
-
-    const startStr = encodeURIComponent(formatMWDate(startDate) + ' 00:00:00');
-    const endStr = encodeURIComponent(formatMWDate(endDate) + ' 23:59:59');
-
-    const url = `https://www.marketwatch.com/investing/bond/${symbol}/downloaddatapartial?startdate=${startStr}&enddate=${endStr}&daterange=d30&frequency=p1d&csvdownload=true&downloadpartial=false&newdates=false&countrycode=${countryCode}`;
-
-    const response = await fetch(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'text/csv,application/csv,text/plain,*/*',
-        'Accept-Language': 'en-US,en;q=0.9',
-      },
+    const response = await fetch(yieldsApiUrl, {
+      headers: { 'Accept': 'application/json' },
     });
 
-    if (!response.ok) return null;
-
-    const csvText = await response.text();
-    if (!csvText || csvText.includes('<!DOCTYPE') || csvText.includes('<html')) {
-      // Got HTML instead of CSV - likely blocked or error page
-      return null;
+    if (!response.ok) {
+      console.error(`Yields API error: ${response.status}`);
+      return {};
     }
 
-    // Parse CSV: expected format is "Date,Open,High,Low,Close" (no Volume for bonds)
-    const lines = csvText.trim().split('\n');
-    if (lines.length < 2) return null;
+    const data = await response.json();
+    if (!data.consensus || !Array.isArray(data.consensus)) {
+      return {};
+    }
 
-    // Skip header row and parse data rows
-    const dailyData = [];
-    for (let i = 1; i < lines.length; i++) {
-      const cols = lines[i].split(',');
-      if (cols.length >= 5) {
-        // Date is in MM/DD/YYYY format, Close is the 5th column (index 4)
-        const dateStr = cols[0].trim();
-        const closeStr = cols[4].trim();
-        const close = parseFloat(closeStr);
+    const results = {};
 
-        if (!isNaN(close)) {
-          // Convert MM/DD/YYYY to YYYY-MM-DD for comparison
-          const dateParts = dateStr.split('/');
-          if (dateParts.length === 3) {
-            const isoDate = `${dateParts[2]}-${dateParts[0].padStart(2, '0')}-${dateParts[1].padStart(2, '0')}`;
-            if (isoDate <= targetDate) {
-              dailyData.push({ date: isoDate, close });
-            }
-          }
+    // Map API response to our format
+    const countryMapping = {
+      'United States': { prefix: 'US', yields: ['twoYear', 'tenYear', 'thirtyYear'], names: ['2-Year', '10-Year', '30-Year'] },
+      'Germany': { prefix: 'German', yields: ['twoYear', 'tenYear', 'thirtyYear'], names: ['2-Year Bund', '10-Year Bund', '30-Year Bund'] },
+      'United Kingdom': { prefix: 'UK', yields: ['twoYear', 'tenYear', 'thirtyYear'], names: ['2-Year Gilt', '10-Year Gilt', '30-Year Gilt'] },
+      'Japan': { prefix: 'JGB', yields: ['twoYear', 'tenYear', 'thirtyYear'], names: ['2-Year', '10-Year', '30-Year'] },
+    };
+
+    for (const countryData of data.consensus) {
+      const mapping = countryMapping[countryData.country];
+      if (!mapping) continue;
+
+      // Check if the data date is close to target date (within 3 days for weekends/holidays)
+      const asOfDate = countryData.asOfDate;
+      if (asOfDate) {
+        const targetDateObj = new Date(targetDate);
+        const asOfDateObj = new Date(asOfDate);
+        const daysDiff = Math.abs((targetDateObj - asOfDateObj) / (1000 * 60 * 60 * 24));
+        if (daysDiff > 3) {
+          console.log(`Skipping ${countryData.country} yields: data is from ${asOfDate}, target is ${targetDate}`);
+          continue;
         }
       }
+
+      // Skip US yields from API - we get those from Yahoo Finance
+      if (countryData.country === 'United States') continue;
+
+      // Process each tenor
+      mapping.yields.forEach((tenor, index) => {
+        const tenorData = countryData[tenor];
+        if (tenorData && tenorData.yield !== null && tenorData.yield !== undefined) {
+          const assetName = `${mapping.prefix} ${mapping.names[index]} Yield`;
+          results[assetName] = {
+            close: tenorData.yield,
+            bpsChange: tenorData.change || 0,
+            previousClose: tenorData.yield - (tenorData.change || 0) / 100,
+            date: asOfDate || targetDate,
+            category: 'FIXED INCOME',
+            isYield: true,
+            confidence: tenorData.confidence || 'unknown',
+          };
+        }
+      });
     }
 
-    // Sort chronologically
-    dailyData.sort((a, b) => a.date.localeCompare(b.date));
-
-    if (dailyData.length === 0) return null;
-
-    const targetData = dailyData[dailyData.length - 1];
-    const prevData = dailyData.length > 1 ? dailyData[dailyData.length - 2] : null;
-
-    let percentChange = null;
-    if (prevData && prevData.close !== 0) {
-      percentChange = ((targetData.close - prevData.close) / prevData.close) * 100;
-    }
-
-    return {
-      close: targetData.close,
-      previousClose: prevData?.close,
-      percentChange,
-      date: targetData.date,
-    };
+    return results;
   } catch (err) {
-    console.error(`MarketWatch fetch error for ${symbol}:`, err.message);
-    return null;
+    console.error('Yields API fetch error:', err.message);
+    return {};
   }
 }
 
 async function fetchVerifiedData(targetDate) {
   const results = {};
 
+  // Fetch assets from Yahoo Finance
   for (const [assetName, config] of Object.entries(ASSETS)) {
-    let data = null;
-
     if (config.yahoo) {
-      data = await fetchYahooChart(config.yahoo, targetDate);
-    } else if (config.marketwatch) {
-      data = await fetchMarketWatchBond(config.marketwatch, config.countryCode || 'bx', targetDate);
-    }
+      const data = await fetchYahooChart(config.yahoo, targetDate);
+      if (data) {
+        results[assetName] = {
+          ...data,
+          category: config.category,
+          isYield: config.isYield || false,
+        };
 
-    if (data) {
-      results[assetName] = {
-        ...data,
-        category: config.category,
-        isYield: config.isYield || false,
-      };
-      
-      // Calculate bps change for yields
-      if (config.isYield && data.previousClose !== null) {
-        results[assetName].bpsChange = (data.close - data.previousClose) * 100;
+        // Calculate bps change for yields
+        if (config.isYield && data.previousClose !== null) {
+          results[assetName].bpsChange = (data.close - data.previousClose) * 100;
+        }
       }
     }
   }
-  
+
+  // Fetch international yields from external API and merge
+  const internationalYields = await fetchInternationalYields(targetDate);
+  Object.assign(results, internationalYields);
+
   return results;
 }
 
