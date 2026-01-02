@@ -369,9 +369,27 @@ ${finalContent}`;
             </div>
             <div className="p-5">
               {['EQUITIES', 'FIXED INCOME', 'COMMODITIES', 'CURRENCIES', 'DIGITAL ASSETS'].map(category => {
+                // Custom sort orders for specific categories
+                const sortOrders = {
+                  'EQUITIES': ['S&P 500', 'Nasdaq Composite', 'Dow Jones', 'Euro Stoxx 50', 'DAX', 'FTSE 100', 'Russell 2000', 'Nikkei 225', 'Hang Seng', 'VIX'],
+                  'FIXED INCOME': ['US 2-Year Yield', 'US 10-Year Yield', 'US 30-Year Yield', 'JGB 2-Year Yield', 'JGB 10-Year Yield', 'JGB 30-Year Yield', 'German 2-Year Bund Yield', 'German 10-Year Bund Yield', 'German 30-Year Bund Yield', 'UK 2-Year Gilt Yield', 'UK 10-Year Gilt Yield', 'UK 30-Year Gilt Yield'],
+                  'COMMODITIES': ['Gold', 'Silver', 'Copper', 'WTI Oil', 'Brent Oil'],
+                };
+
                 const categoryItems = Object.entries(verifiedData)
                   .filter(([_, data]) => data.category === category)
-                  .sort((a, b) => a[0].localeCompare(b[0]));
+                  .sort((a, b) => {
+                    const order = sortOrders[category];
+                    if (order) {
+                      const aIdx = order.indexOf(a[0]);
+                      const bIdx = order.indexOf(b[0]);
+                      // Items not in the order list go to the end
+                      const aPos = aIdx === -1 ? 999 : aIdx;
+                      const bPos = bIdx === -1 ? 999 : bIdx;
+                      return aPos - bPos;
+                    }
+                    return a[0].localeCompare(b[0]);
+                  });
 
                 if (categoryItems.length === 0) return null;
 
