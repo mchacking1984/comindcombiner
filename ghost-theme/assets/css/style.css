@@ -1,0 +1,728 @@
+/* ============================================
+   Morning Pulse Ghost Theme
+   Color Palette from Co-Mind Consolidator
+   ============================================ */
+
+:root {
+    /* Backgrounds */
+    --bg-primary: #0f172a;      /* slate-900 */
+    --bg-secondary: #1e293b;    /* slate-800 */
+    --bg-tertiary: #334155;     /* slate-700 */
+
+    /* Text */
+    --text-primary: #ffffff;
+    --text-secondary: #e2e8f0;  /* slate-200 */
+    --text-body: #cbd5e1;       /* slate-300 */
+    --text-muted: #94a3b8;      /* slate-400 */
+    --text-subtle: #64748b;     /* slate-500 */
+
+    /* Borders */
+    --border-color: #334155;    /* slate-700 */
+
+    /* Accents */
+    --accent-blue: #2563eb;     /* blue-600 */
+    --accent-blue-hover: #3b82f6; /* blue-500 */
+    --accent-green: #4ade80;    /* green-400 */
+    --accent-red: #f87171;      /* red-400 */
+
+    /* Spacing */
+    --container-width: 1200px;
+    --container-narrow: 720px;
+    --spacing-xs: 0.5rem;
+    --spacing-sm: 1rem;
+    --spacing-md: 1.5rem;
+    --spacing-lg: 2rem;
+    --spacing-xl: 3rem;
+
+    /* Typography */
+    --font-sans: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, sans-serif;
+    --font-mono: 'SF Mono', 'Monaco', 'Consolas', 'Liberation Mono', monospace;
+
+    /* Border Radius */
+    --radius-sm: 0.375rem;
+    --radius-md: 0.5rem;
+    --radius-lg: 0.75rem;
+}
+
+/* ============================================
+   Reset & Base Styles
+   ============================================ */
+
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
+html {
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: var(--font-sans);
+    font-size: 1rem;
+    line-height: 1.6;
+    color: var(--text-body);
+    background-color: var(--bg-primary);
+}
+
+a {
+    color: var(--accent-blue);
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+a:hover {
+    color: var(--accent-blue-hover);
+}
+
+img {
+    max-width: 100%;
+    height: auto;
+}
+
+/* ============================================
+   Layout
+   ============================================ */
+
+.site-wrapper {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.site-main {
+    flex: 1;
+    padding: var(--spacing-xl) 0;
+}
+
+.container {
+    max-width: var(--container-width);
+    margin: 0 auto;
+    padding: 0 var(--spacing-md);
+}
+
+.container-narrow {
+    max-width: var(--container-narrow);
+}
+
+/* ============================================
+   Header
+   ============================================ */
+
+.site-header {
+    background-color: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-color);
+    padding: var(--spacing-md) 0;
+}
+
+.header-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.site-logo {
+    display: flex;
+    align-items: center;
+}
+
+.site-logo img {
+    height: 40px;
+    width: auto;
+}
+
+.site-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.site-nav ul {
+    display: flex;
+    gap: var(--spacing-md);
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.site-nav a {
+    color: var(--text-muted);
+    font-weight: 500;
+    transition: color 0.2s ease;
+}
+
+.site-nav a:hover,
+.site-nav a.nav-current {
+    color: var(--text-primary);
+}
+
+/* ============================================
+   Footer
+   ============================================ */
+
+.site-footer {
+    background-color: var(--bg-secondary);
+    border-top: 1px solid var(--border-color);
+    padding: var(--spacing-lg) 0;
+    margin-top: auto;
+}
+
+.footer-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: var(--text-subtle);
+    font-size: 0.875rem;
+}
+
+.footer-content a {
+    color: var(--text-muted);
+}
+
+/* ============================================
+   Page Header
+   ============================================ */
+
+.page-header {
+    text-align: center;
+    margin-bottom: var(--spacing-xl);
+    padding-bottom: var(--spacing-lg);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.page-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0 0 var(--spacing-sm);
+}
+
+.page-description {
+    font-size: 1.125rem;
+    color: var(--text-muted);
+    margin: 0;
+}
+
+/* Author Header */
+.author-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.author-avatar {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    margin-bottom: var(--spacing-md);
+}
+
+/* ============================================
+   Post Feed (Index Page)
+   ============================================ */
+
+.post-feed {
+    display: grid;
+    gap: var(--spacing-lg);
+}
+
+.post-card {
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.post-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.post-card-image-link {
+    display: block;
+}
+
+.post-card-image {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+}
+
+.post-card-content {
+    padding: var(--spacing-md);
+}
+
+.post-card-tag {
+    display: inline-block;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--accent-blue);
+    margin-bottom: var(--spacing-xs);
+}
+
+.post-card-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0 0 var(--spacing-sm);
+    line-height: 1.3;
+}
+
+.post-card-title a {
+    color: var(--text-primary);
+}
+
+.post-card-title a:hover {
+    color: var(--accent-blue);
+}
+
+.post-card-excerpt {
+    color: var(--text-muted);
+    margin: 0 0 var(--spacing-sm);
+}
+
+.post-card-meta {
+    font-size: 0.875rem;
+    color: var(--text-subtle);
+}
+
+.meta-separator {
+    margin: 0 0.5rem;
+}
+
+/* ============================================
+   Single Post
+   ============================================ */
+
+.post-header {
+    text-align: center;
+    padding: var(--spacing-xl) 0;
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: var(--spacing-lg);
+}
+
+.post-tag {
+    display: inline-block;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--accent-blue);
+    margin-bottom: var(--spacing-sm);
+}
+
+.post-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0 0 var(--spacing-md);
+    line-height: 1.2;
+}
+
+.post-meta {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+}
+
+.post-feature-image {
+    margin: 0 0 var(--spacing-xl);
+}
+
+.post-feature-image img {
+    width: 100%;
+    max-height: 500px;
+    object-fit: cover;
+    border-radius: var(--radius-md);
+}
+
+/* ============================================
+   Post Content (The Important Part!)
+   ============================================ */
+
+.post-content {
+    font-size: 1.0625rem;
+    line-height: 1.75;
+}
+
+.post-content h1,
+.post-content h2,
+.post-content h3,
+.post-content h4,
+.post-content h5,
+.post-content h6 {
+    color: var(--text-primary);
+    font-weight: 700;
+    margin-top: var(--spacing-xl);
+    margin-bottom: var(--spacing-md);
+}
+
+.post-content h1 {
+    font-size: 2rem;
+}
+
+.post-content h2 {
+    font-size: 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: var(--spacing-sm);
+}
+
+.post-content h3 {
+    font-size: 1.25rem;
+}
+
+.post-content p {
+    margin: 0 0 var(--spacing-md);
+}
+
+.post-content strong {
+    color: var(--text-secondary);
+    font-weight: 600;
+}
+
+.post-content em {
+    color: var(--text-muted);
+}
+
+.post-content a {
+    color: var(--accent-blue);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+.post-content a:hover {
+    color: var(--accent-blue-hover);
+}
+
+.post-content ul,
+.post-content ol {
+    margin: 0 0 var(--spacing-md);
+    padding-left: var(--spacing-md);
+}
+
+.post-content li {
+    margin-bottom: var(--spacing-xs);
+}
+
+.post-content hr {
+    border: none;
+    border-top: 1px solid var(--border-color);
+    margin: var(--spacing-lg) 0;
+}
+
+.post-content blockquote {
+    margin: var(--spacing-md) 0;
+    padding: var(--spacing-md);
+    border-left: 4px solid var(--accent-blue);
+    background-color: var(--bg-secondary);
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+
+.post-content blockquote p {
+    margin: 0;
+    color: var(--text-secondary);
+}
+
+.post-content code {
+    font-family: var(--font-mono);
+    font-size: 0.875em;
+    background-color: var(--bg-tertiary);
+    padding: 0.125em 0.375em;
+    border-radius: var(--radius-sm);
+}
+
+.post-content pre {
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-md);
+    overflow-x: auto;
+    margin: var(--spacing-md) 0;
+}
+
+.post-content pre code {
+    background: none;
+    padding: 0;
+}
+
+.post-content img {
+    border-radius: var(--radius-md);
+    margin: var(--spacing-md) 0;
+}
+
+.post-content figure {
+    margin: var(--spacing-lg) 0;
+}
+
+.post-content figcaption {
+    text-align: center;
+    font-size: 0.875rem;
+    color: var(--text-subtle);
+    margin-top: var(--spacing-sm);
+}
+
+.post-content table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: var(--spacing-md) 0;
+}
+
+.post-content th,
+.post-content td {
+    padding: var(--spacing-sm);
+    border: 1px solid var(--border-color);
+    text-align: left;
+}
+
+.post-content th {
+    background-color: var(--bg-tertiary);
+    color: var(--text-secondary);
+    font-weight: 600;
+}
+
+/* ============================================
+   Post Footer
+   ============================================ */
+
+.post-footer {
+    margin-top: var(--spacing-xl);
+    padding-top: var(--spacing-lg);
+    border-top: 1px solid var(--border-color);
+}
+
+.post-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-xs);
+}
+
+.post-tags .tag {
+    display: inline-block;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    background-color: var(--bg-tertiary);
+    border-radius: var(--radius-sm);
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.post-tags .tag:hover {
+    background-color: var(--accent-blue);
+    color: var(--text-primary);
+}
+
+/* ============================================
+   Pagination
+   ============================================ */
+
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: var(--spacing-md);
+    margin-top: var(--spacing-xl);
+    padding-top: var(--spacing-lg);
+    border-top: 1px solid var(--border-color);
+}
+
+.pagination a {
+    display: inline-flex;
+    align-items: center;
+    padding: var(--spacing-sm) var(--spacing-md);
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    color: var(--text-muted);
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.pagination a:hover {
+    background-color: var(--accent-blue);
+    border-color: var(--accent-blue);
+    color: var(--text-primary);
+}
+
+.page-number {
+    color: var(--text-subtle);
+}
+
+/* ============================================
+   Error Page
+   ============================================ */
+
+.error-page {
+    text-align: center;
+    padding: var(--spacing-xl) 0;
+}
+
+.error-code {
+    font-size: 8rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+    line-height: 1;
+}
+
+.error-message {
+    font-size: 1.25rem;
+    color: var(--text-muted);
+    margin: var(--spacing-md) 0 var(--spacing-lg);
+}
+
+.error-link {
+    display: inline-block;
+    padding: var(--spacing-sm) var(--spacing-lg);
+    background-color: var(--accent-blue);
+    color: var(--text-primary);
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    transition: background-color 0.2s ease;
+}
+
+.error-link:hover {
+    background-color: var(--accent-blue-hover);
+    color: var(--text-primary);
+}
+
+/* ============================================
+   Responsive Design
+   ============================================ */
+
+@media (max-width: 768px) {
+    .header-content {
+        flex-direction: column;
+        gap: var(--spacing-md);
+    }
+
+    .page-title {
+        font-size: 2rem;
+    }
+
+    .post-title {
+        font-size: 1.75rem;
+    }
+
+    .post-content h2 {
+        font-size: 1.25rem;
+    }
+
+    .footer-content {
+        flex-direction: column;
+        gap: var(--spacing-sm);
+        text-align: center;
+    }
+}
+
+/* ============================================
+   Ghost-Specific Classes
+   ============================================ */
+
+.kg-card {
+    margin: var(--spacing-lg) 0;
+}
+
+.kg-image-card img {
+    width: 100%;
+}
+
+.kg-width-wide {
+    max-width: 1000px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.kg-width-full {
+    max-width: none;
+    margin-left: calc(50% - 50vw);
+    margin-right: calc(50% - 50vw);
+    width: 100vw;
+}
+
+.kg-bookmark-card {
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+}
+
+.kg-bookmark-container {
+    display: flex;
+    text-decoration: none;
+}
+
+.kg-bookmark-content {
+    padding: var(--spacing-md);
+    flex: 1;
+}
+
+.kg-bookmark-title {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.kg-bookmark-description {
+    color: var(--text-muted);
+    font-size: 0.875rem;
+    margin-top: var(--spacing-xs);
+}
+
+.kg-bookmark-metadata {
+    display: flex;
+    align-items: center;
+    margin-top: var(--spacing-sm);
+    font-size: 0.75rem;
+    color: var(--text-subtle);
+}
+
+.kg-bookmark-icon {
+    width: 16px;
+    height: 16px;
+    margin-right: var(--spacing-xs);
+}
+
+.kg-bookmark-thumbnail {
+    width: 200px;
+}
+
+.kg-bookmark-thumbnail img {
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Callout cards */
+.kg-callout-card {
+    padding: var(--spacing-md);
+    border-radius: var(--radius-md);
+}
+
+.kg-callout-card-grey {
+    background-color: var(--bg-secondary);
+}
+
+.kg-callout-emoji {
+    margin-right: var(--spacing-sm);
+}
+
+/* Button cards */
+.kg-button-card {
+    text-align: center;
+}
+
+.kg-btn {
+    display: inline-block;
+    padding: var(--spacing-sm) var(--spacing-lg);
+    background-color: var(--accent-blue);
+    color: var(--text-primary);
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    transition: background-color 0.2s ease;
+}
+
+.kg-btn:hover {
+    background-color: var(--accent-blue-hover);
+    color: var(--text-primary);
+}

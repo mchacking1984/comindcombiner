@@ -1,0 +1,19 @@
+<header class="site-header">
+    <div class="container">
+        <div class="header-content">
+            <a href="{{@site.url}}" class="site-logo">
+                {{#if @site.logo}}
+                    <img src="{{@site.logo}}" alt="{{@site.title}}">
+                {{else}}
+                    <span class="site-title">{{@site.title}}</span>
+                {{/if}}
+            </a>
+
+            {{#if @site.navigation}}
+                <nav class="site-nav">
+                    {{navigation}}
+                </nav>
+            {{/if}}
+        </div>
+    </div>
+</header>

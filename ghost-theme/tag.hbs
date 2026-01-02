@@ -1,0 +1,18 @@
+{{!< default}}
+
+<div class="container">
+    <header class="page-header">
+        <h1 class="page-title">{{tag.name}}</h1>
+        {{#if tag.description}}
+            <p class="page-description">{{tag.description}}</p>
+        {{/if}}
+    </header>
+
+    <div class="post-feed">
+        {{#foreach posts}}
+            {{> post-card}}
+        {{/foreach}}
+    </div>
+
+    {{pagination}}
+</div>

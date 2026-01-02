@@ -1,0 +1,21 @@
+{{!< default}}
+
+<article class="post-full page {{post_class}}">
+    <header class="post-header">
+        <div class="container">
+            <h1 class="post-title">{{title}}</h1>
+        </div>
+    </header>
+
+    {{#if feature_image}}
+        <figure class="post-feature-image">
+            <img src="{{feature_image}}" alt="{{title}}">
+        </figure>
+    {{/if}}
+
+    <section class="post-content">
+        <div class="container container-narrow">
+            {{content}}
+        </div>
+    </section>
+</article>

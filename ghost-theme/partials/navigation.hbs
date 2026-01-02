@@ -1,0 +1,11 @@
+{{#if @site.navigation}}
+<nav class="site-nav">
+    <ul class="nav-list">
+        {{#foreach navigation}}
+            <li class="nav-item">
+                <a href="{{url}}" class="nav-link{{#if current}} nav-current{{/if}}">{{label}}</a>
+            </li>
+        {{/foreach}}
+    </ul>
+</nav>
+{{/if}}

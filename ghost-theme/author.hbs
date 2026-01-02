@@ -1,0 +1,21 @@
+{{!< default}}
+
+<div class="container">
+    <header class="page-header author-header">
+        {{#if author.profile_image}}
+            <img class="author-avatar" src="{{author.profile_image}}" alt="{{author.name}}">
+        {{/if}}
+        <h1 class="page-title">{{author.name}}</h1>
+        {{#if author.bio}}
+            <p class="page-description">{{author.bio}}</p>
+        {{/if}}
+    </header>
+
+    <div class="post-feed">
+        {{#foreach posts}}
+            {{> post-card}}
+        {{/foreach}}
+    </div>
+
+    {{pagination}}
+</div>
