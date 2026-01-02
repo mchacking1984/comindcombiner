@@ -468,8 +468,9 @@ OUTPUT FORMAT:
 
 *[One italic sentence summarizing the rates theme]*
 
-• The **U.S.** 10-year yield [USE VERIFIED YIELD AND BPS CHANGE]. [Curve context].
-• **Global yields**: [USE VERIFIED INTERNATIONAL YIELD DATA for JGB, Bund, Gilt if available]. [Note divergence or convergence with US rates].
+• **U.S.** The 10-year yield [USE VERIFIED US 10-YEAR YIELD AND BPS CHANGE]. The 30-year [USE VERIFIED US 30-YEAR YIELD]. [Curve context and Fed expectations].
+• **Europe** German Bunds [USE VERIFIED GERMAN BUND YIELDS if available]. UK Gilts [USE VERIFIED UK GILT YIELDS if available]. [Note divergence or convergence with US rates, ECB/BOE context].
+• **Asia** JGBs [USE VERIFIED JGB YIELDS if available]. [Note BOJ policy context and any divergence from global rates].
 
 ---
 
@@ -487,8 +488,9 @@ OUTPUT FORMAT:
 
 *[One italic sentence summarizing the FX theme]*
 
-• The **Dollar Index** [USE VERIFIED DXY FIGURE with context].
-• Key pairs: [USE VERIFIED FX FIGURES].
+• **U.S.** The Dollar Index [USE VERIFIED DXY FIGURE] [context on dollar strength/weakness and drivers].
+• **Europe** EUR/USD [USE VERIFIED EUR/USD FIGURE]. GBP/USD [USE VERIFIED GBP/USD FIGURE]. [Note any divergence between EUR and GBP, ECB/BOE context].
+• **Asia** USD/JPY [USE VERIFIED USD/JPY FIGURE]. [Context on yen dynamics, BOJ policy, carry trade flows].
 
 ---
 
