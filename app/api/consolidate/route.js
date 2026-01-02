@@ -89,13 +89,12 @@ async function fetchYahooChart(symbol, targetDate) {
   }
 }
 
-// Yield fetching prompt - request all tenors for all countries
+// Yield fetching prompt - request all tenors for international bonds only
 const YIELD_PROMPT = `Search for the current government bond yields. I need yields for these specific bonds:
 
-1. US 2-Year Treasury
-2. German 2-Year Bund, 10-Year Bund, 30-Year Bund
-3. UK 2-Year Gilt, 10-Year Gilt, 30-Year Gilt
-4. Japan JGB 2-Year, 10-Year, 30-Year
+1. German 2-Year Bund, 10-Year Bund, 30-Year Bund
+2. UK 2-Year Gilt, 10-Year Gilt, 30-Year Gilt
+3. Japan JGB 2-Year, 10-Year, 30-Year
 
 For each bond, find:
 - The current yield (as a percentage, e.g., 2.45)
@@ -106,7 +105,6 @@ Search financial sources like investing.com, tradingeconomics.com, bloomberg.com
 Return ONLY a valid JSON object in this exact format, with no other text:
 {
   "yields": [
-    {"name": "US 2-Year", "yield": 4.25, "change": 5, "date": "2025-01-02"},
     {"name": "German 2-Year Bund", "yield": 2.15, "change": 3, "date": "2025-01-02"},
     {"name": "German 10-Year Bund", "yield": 2.45, "change": 5, "date": "2025-01-02"},
     {"name": "German 30-Year Bund", "yield": 2.65, "change": 4, "date": "2025-01-02"},
@@ -450,7 +448,7 @@ OUTPUT FORMAT:
 
 ## Market Mood
 
-**[Two-Word Phrase].** [3-4 sentences capturing the prevailing tone. Be specific about what drove sentiment.]
+**[Two-Word Phrase].** [6-8 sentences capturing the prevailing tone in detail. Be specific about what drove sentiment. Discuss the key narrative that dominated trading. Mention any notable shifts in risk appetite or positioning. Touch on how different regions or asset classes reflected the mood. Provide context on whether this continues a recent trend or represents a shift.]
 
 ---
 
@@ -460,9 +458,9 @@ OUTPUT FORMAT:
 
 *[One italic sentence summarizing the equity theme]*
 
-• The **U.S.** [USE VERIFIED S&P 500 and Nasdaq figures]. [Context and notable single-stock moves].
-• **European** equities [USE VERIFIED Euro Stoxx figure with context].
-• In **Asia**, [USE VERIFIED Nikkei figure with context].
+• The **U.S.** [USE VERIFIED S&P 500, Nasdaq, Dow, and Russell 2000 figures]. [Context on sector rotation]. Notable movers: [2-3 significant single-stock moves with brief context - e.g., earnings, guidance, analyst actions].
+• **European** equities [USE VERIFIED Euro Stoxx, DAX, and FTSE figures with context]. Notable movers: [1-2 significant European single-stock moves if available from LLM inputs].
+• In **Asia**, [USE VERIFIED Nikkei and Hang Seng figures with context]. Notable movers: [1-2 significant Asian single-stock moves if available from LLM inputs].
 
 ---
 
