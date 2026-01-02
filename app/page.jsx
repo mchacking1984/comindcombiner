@@ -365,7 +365,7 @@ ${finalContent}`;
         {verifiedData && (
           <div className="mb-6 bg-slate-800 rounded-lg border border-slate-700 overflow-hidden">
             <div className="px-5 py-4 border-b border-slate-700">
-              <h3 className="font-semibold text-lg">Verified Market Data for {formatDate(pulseDate)}</h3>
+              <h3 className="font-semibold text-lg">Market Data for {formatDate(pulseDate)}</h3>
             </div>
             <div className="p-5">
               {['EQUITIES', 'FIXED INCOME', 'COMMODITIES', 'CURRENCIES', 'DIGITAL ASSETS'].map(category => {
@@ -439,6 +439,9 @@ ${finalContent}`;
                   </div>
                 );
               })}
+              <p className="text-xs text-slate-500 italic mt-4 pt-4 border-t border-slate-700">
+                * Some data has been sourced via LLM web search and may contain errors. Please verify before use.
+              </p>
             </div>
           </div>
         )}
