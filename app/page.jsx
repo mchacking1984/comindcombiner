@@ -342,66 +342,9 @@ ${finalContent}`;
           </div>
         )}
 
-        {/* Verified Data Table */}
-        {verifiedData && (
-          <div className="mb-6 bg-slate-800 rounded-lg border border-slate-700 overflow-hidden">
-            <div className="bg-slate-700 px-4 py-3">
-              <h3 className="font-semibold">Verified Market Data</h3>
-              <p className="text-xs text-slate-400">Data fetched from Yahoo Finance & MarketWatch for {pulseDate}</p>
-            </div>
-            <div className="p-4 overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-left text-slate-400 border-b border-slate-700">
-                    <th className="pb-2 pr-4">Asset</th>
-                    <th className="pb-2 pr-4">Category</th>
-                    <th className="pb-2 pr-4 text-right">Close</th>
-                    <th className="pb-2 pr-4 text-right">Change</th>
-                    <th className="pb-2 text-right">Date</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {Object.entries(verifiedData)
-                    .sort((a, b) => {
-                      const categoryOrder = ['EQUITIES', 'FIXED INCOME', 'COMMODITIES', 'CURRENCIES', 'DIGITAL ASSETS'];
-                      return categoryOrder.indexOf(a[1].category) - categoryOrder.indexOf(b[1].category);
-                    })
-                    .map(([name, data]) => (
-                    <tr key={name} className="border-b border-slate-700/50 hover:bg-slate-700/30">
-                      <td className="py-2 pr-4 font-medium text-slate-200">{name}</td>
-                      <td className="py-2 pr-4 text-slate-400 text-xs">{data.category}</td>
-                      <td className="py-2 pr-4 text-right font-mono text-slate-200">
-                        {data.isYield
-                          ? `${data.close.toFixed(3)}%`
-                          : name.includes('/')
-                            ? data.close.toFixed(4)
-                            : data.close > 100
-                              ? data.close.toLocaleString('en-US', { maximumFractionDigits: 2 })
-                              : data.close.toFixed(2)
-                        }
-                      </td>
-                      <td className={`py-2 pr-4 text-right font-mono ${
-                        data.isYield
-                          ? (data.bpsChange >= 0 ? 'text-red-400' : 'text-green-400')
-                          : (data.percentChange >= 0 ? 'text-green-400' : 'text-red-400')
-                      }`}>
-                        {data.isYield
-                          ? `${data.bpsChange >= 0 ? '+' : ''}${data.bpsChange?.toFixed(1) || 'N/A'} bps`
-                          : `${data.percentChange >= 0 ? '+' : ''}${data.percentChange?.toFixed(2) || 'N/A'}%`
-                        }
-                      </td>
-                      <td className="py-2 text-right text-slate-500 text-xs">{data.date}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
         {/* Output */}
         {output && (
-          <div className="bg-slate-800 rounded-lg border border-slate-700 overflow-hidden">
+          <div className="bg-slate-800 rounded-lg border border-slate-700 overflow-hidden mb-6">
             <div className="bg-slate-700 px-4 py-3 flex items-center justify-between">
               <h3 className="font-semibold">Generated Morning Pulse</h3>
               <button
@@ -415,6 +358,70 @@ ${finalContent}`;
               className="p-6 prose prose-invert max-w-none"
               dangerouslySetInnerHTML={{ __html: renderMarkdown(output) }}
             />
+          </div>
+        )}
+
+        {/* Verified Data Grid - Below Output */}
+        {verifiedData && (
+          <div className="mb-6 bg-slate-800 rounded-lg border border-slate-700 overflow-hidden">
+            <div className="px-5 py-4 border-b border-slate-700">
+              <h3 className="font-semibold text-lg">Verified Market Data for {formatDate(pulseDate)}</h3>
+            </div>
+            <div className="p-5">
+              {['EQUITIES', 'FIXED INCOME', 'COMMODITIES', 'CURRENCIES', 'DIGITAL ASSETS'].map(category => {
+                const categoryItems = Object.entries(verifiedData)
+                  .filter(([_, data]) => data.category === category)
+                  .sort((a, b) => a[0].localeCompare(b[0]));
+
+                if (categoryItems.length === 0) return null;
+
+                return (
+                  <div key={category} className="mb-6 last:mb-0">
+                    <h4 className="text-xs font-semibold text-slate-400 mb-3 tracking-wide">{category}</h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-2">
+                      {categoryItems.map(([name, data]) => {
+                        const isYield = data.isYield;
+                        const change = isYield ? data.bpsChange : data.percentChange;
+                        const isPositive = change >= 0;
+                        // For yields, up = red (bad for bonds), for others up = green
+                        const colorClass = isYield
+                          ? (isPositive ? 'text-red-400' : 'text-green-400')
+                          : (isPositive ? 'text-green-400' : 'text-red-400');
+
+                        let displayValue;
+                        if (isYield) {
+                          displayValue = `${data.close.toFixed(3)}%`;
+                        } else if (name.includes('/')) {
+                          displayValue = data.close.toFixed(4);
+                        } else if (data.close > 100) {
+                          displayValue = data.close.toLocaleString('en-US', { maximumFractionDigits: 2 });
+                        } else {
+                          displayValue = data.close.toFixed(2);
+                        }
+
+                        const changeDisplay = isYield
+                          ? `${isPositive ? '+' : ''}${change?.toFixed(1) || '0.0'} bps`
+                          : `${isPositive ? '+' : ''}${change?.toFixed(2) || '0.00'}%`;
+
+                        const arrow = isPositive ? '↑' : '↓';
+
+                        return (
+                          <div key={name} className="flex items-center justify-between py-1.5">
+                            <span className="text-slate-300 text-sm">{name}</span>
+                            <div className="flex items-center gap-3">
+                              <span className="font-mono text-sm text-slate-100 font-medium">{displayValue}</span>
+                              <span className={`font-mono text-sm ${colorClass} min-w-[80px] text-right`}>
+                                {changeDisplay} {arrow}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
 
