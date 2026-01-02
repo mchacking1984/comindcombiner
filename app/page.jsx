@@ -114,8 +114,6 @@ export default function Home() {
       // Add the title header
       const fullOutput = `# Co-Mind Morning Pulse – ${formattedDate}
 
-[CARTOON IMAGE PLACEHOLDER]
-
 ${finalContent}`;
 
       setOutput(fullOutput);
