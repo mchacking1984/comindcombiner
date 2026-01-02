@@ -89,32 +89,40 @@ async function fetchYahooChart(symbol, targetDate) {
   }
 }
 
-// Fetch international bond yields using Gemini with Google Search grounding
-async function fetchInternationalYields(targetDate, apiKey) {
-  if (!apiKey) {
-    console.log('No API key for yield fetching, skipping international yields');
-    return {};
-  }
+// Yield fetching prompt - request all tenors for all countries
+const YIELD_PROMPT = `Search for the current government bond yields. I need yields for these specific bonds:
 
-  const prompt = `Search for the current government bond yields for Germany, United Kingdom, and Japan. I need the 10-year yields for each country.
+1. US 2-Year Treasury
+2. German 2-Year Bund, 10-Year Bund, 30-Year Bund
+3. UK 2-Year Gilt, 10-Year Gilt, 30-Year Gilt
+4. Japan JGB 2-Year, 10-Year, 30-Year
 
-For each country, find:
-1. The current yield (as a percentage, e.g., 2.45)
-2. The change from the previous session in basis points (e.g., +5 or -3)
+For each bond, find:
+- The current yield (as a percentage, e.g., 2.45)
+- The change from the previous session in basis points (e.g., +5 or -3)
 
-Search financial sources like investing.com, tradingeconomics.com, bloomberg.com, or reuters.com.
+Search financial sources like investing.com, tradingeconomics.com, bloomberg.com, cnbc.com, or reuters.com.
 
 Return ONLY a valid JSON object in this exact format, with no other text:
 {
   "yields": [
-    {"country": "Germany", "name": "German 10-Year Bund", "yield": 2.45, "change": 5, "date": "2025-01-02"},
-    {"country": "United Kingdom", "name": "UK 10-Year Gilt", "yield": 4.62, "change": -3, "date": "2025-01-02"},
-    {"country": "Japan", "name": "JGB 10-Year", "yield": 1.12, "change": 2, "date": "2025-01-02"}
+    {"name": "US 2-Year", "yield": 4.25, "change": 5, "date": "2025-01-02"},
+    {"name": "German 2-Year Bund", "yield": 2.15, "change": 3, "date": "2025-01-02"},
+    {"name": "German 10-Year Bund", "yield": 2.45, "change": 5, "date": "2025-01-02"},
+    {"name": "German 30-Year Bund", "yield": 2.65, "change": 4, "date": "2025-01-02"},
+    {"name": "UK 2-Year Gilt", "yield": 4.32, "change": -2, "date": "2025-01-02"},
+    {"name": "UK 10-Year Gilt", "yield": 4.62, "change": -3, "date": "2025-01-02"},
+    {"name": "UK 30-Year Gilt", "yield": 5.12, "change": -1, "date": "2025-01-02"},
+    {"name": "JGB 2-Year", "yield": 0.58, "change": 1, "date": "2025-01-02"},
+    {"name": "JGB 10-Year", "yield": 1.12, "change": 2, "date": "2025-01-02"},
+    {"name": "JGB 30-Year", "yield": 2.28, "change": 3, "date": "2025-01-02"}
   ]
 }
 
 Use today's actual data from your search. The "change" should be in basis points (positive or negative integer). The "date" should be the as-of date for the data.`;
 
+// Fetch yields from Gemini with Google Search
+async function fetchYieldsFromGemini(apiKey) {
   try {
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
@@ -122,24 +130,19 @@ Use today's actual data from your search. The "change" should be in basis points
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          contents: [{ role: 'user', parts: [{ text: prompt }] }],
+          contents: [{ role: 'user', parts: [{ text: YIELD_PROMPT }] }],
           tools: [{ googleSearch: {} }],
-          generationConfig: {
-            temperature: 0.1,
-            maxOutputTokens: 1000,
-          },
+          generationConfig: { temperature: 0.1, maxOutputTokens: 2000 },
         }),
       }
     );
 
     if (!response.ok) {
       console.error(`Gemini yield fetch error: ${response.status}`);
-      return {};
+      return null;
     }
 
     const data = await response.json();
-
-    // Extract text from response
     let responseText = '';
     if (data.candidates?.[0]?.content?.parts) {
       responseText = data.candidates[0].content.parts
@@ -148,18 +151,72 @@ Use today's actual data from your search. The "change" should be in basis points
         .join('');
     }
 
-    if (!responseText) {
-      console.error('No response text from Gemini yield fetch');
-      return {};
+    return parseYieldResponse(responseText, 'gemini');
+  } catch (err) {
+    console.error('Gemini yield fetch error:', err.message);
+    return null;
+  }
+}
+
+// Fetch yields from OpenAI with web search
+async function fetchYieldsFromOpenAI(apiKey) {
+  if (!apiKey) return null;
+
+  try {
+    const response = await fetch('https://api.openai.com/v1/responses', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o',
+        tools: [{ type: 'web_search_preview' }],
+        input: YIELD_PROMPT,
+      }),
+    });
+
+    if (!response.ok) {
+      console.error(`OpenAI yield fetch error: ${response.status}`);
+      return null;
     }
 
+    const data = await response.json();
+    let responseText = '';
+    if (data.output) {
+      // Extract text from output array
+      for (const item of data.output) {
+        if (item.type === 'message' && item.content) {
+          for (const content of item.content) {
+            if (content.type === 'output_text') {
+              responseText += content.text;
+            }
+          }
+        }
+      }
+    }
+
+    return parseYieldResponse(responseText, 'openai');
+  } catch (err) {
+    console.error('OpenAI yield fetch error:', err.message);
+    return null;
+  }
+}
+
+// Parse yield response from either provider
+function parseYieldResponse(responseText, provider) {
+  if (!responseText) {
+    console.error(`No response text from ${provider} yield fetch`);
+    return null;
+  }
+
+  try {
     // Parse JSON from response (handle markdown code blocks)
     let jsonStr = responseText;
     const jsonMatch = responseText.match(/```(?:json)?\s*([\s\S]*?)```/);
     if (jsonMatch) {
       jsonStr = jsonMatch[1].trim();
     } else {
-      // Try to find raw JSON
       const rawMatch = responseText.match(/\{[\s\S]*"yields"[\s\S]*\}/);
       if (rawMatch) {
         jsonStr = rawMatch[0];
@@ -168,42 +225,117 @@ Use today's actual data from your search. The "change" should be in basis points
 
     const parsed = JSON.parse(jsonStr);
     if (!parsed.yields || !Array.isArray(parsed.yields)) {
-      console.error('Invalid yield response structure');
-      return {};
+      console.error(`Invalid yield response structure from ${provider}`);
+      return null;
     }
 
-    // Convert to our format
-    const results = {};
-    for (const yieldData of parsed.yields) {
-      if (yieldData.yield !== null && yieldData.yield !== undefined) {
-        // Check date is within 3 days of target
-        if (yieldData.date) {
-          const targetDateObj = new Date(targetDate);
-          const asOfDateObj = new Date(yieldData.date);
-          const daysDiff = Math.abs((targetDateObj - asOfDateObj) / (1000 * 60 * 60 * 24));
-          if (daysDiff > 3) {
-            console.log(`Skipping ${yieldData.name}: data is from ${yieldData.date}, target is ${targetDate}`);
-            continue;
-          }
-        }
-
-        const assetName = `${yieldData.name} Yield`;
-        results[assetName] = {
-          close: yieldData.yield,
-          bpsChange: yieldData.change || 0,
-          previousClose: yieldData.yield - (yieldData.change || 0) / 100,
-          date: yieldData.date || targetDate,
-          category: 'FIXED INCOME',
-          isYield: true,
-        };
-      }
-    }
-
-    return results;
+    return parsed.yields;
   } catch (err) {
-    console.error('Yield fetch error:', err.message);
+    console.error(`Failed to parse ${provider} yield response:`, err.message);
+    return null;
+  }
+}
+
+// Compute consensus from multiple yield sources
+function computeYieldConsensus(geminiYields, openaiYields, targetDate) {
+  const results = {};
+  const allYields = new Map();
+
+  // Helper to add yields to the map
+  const addYields = (yields, provider) => {
+    if (!yields) return;
+    for (const y of yields) {
+      if (!y.name || y.yield === null || y.yield === undefined) continue;
+      const key = y.name;
+      if (!allYields.has(key)) {
+        allYields.set(key, []);
+      }
+      allYields.get(key).push({
+        yield: y.yield,
+        change: y.change || 0,
+        date: y.date,
+        provider,
+      });
+    }
+  };
+
+  addYields(geminiYields, 'gemini');
+  addYields(openaiYields, 'openai');
+
+  // Compute consensus for each yield
+  for (const [name, values] of allYields) {
+    if (values.length === 0) continue;
+
+    // Check date validity (within 3 days of target)
+    const validValues = values.filter(v => {
+      if (!v.date) return true;
+      const targetDateObj = new Date(targetDate);
+      const asOfDateObj = new Date(v.date);
+      const daysDiff = Math.abs((targetDateObj - asOfDateObj) / (1000 * 60 * 60 * 24));
+      return daysDiff <= 3;
+    });
+
+    if (validValues.length === 0) {
+      console.log(`Skipping ${name}: all data outside date range`);
+      continue;
+    }
+
+    // Calculate median yield and change
+    const yields = validValues.map(v => v.yield).sort((a, b) => a - b);
+    const changes = validValues.map(v => v.change).sort((a, b) => a - b);
+
+    const medianYield = yields.length % 2 === 0
+      ? (yields[yields.length / 2 - 1] + yields[yields.length / 2]) / 2
+      : yields[Math.floor(yields.length / 2)];
+
+    const medianChange = changes.length % 2 === 0
+      ? (changes[changes.length / 2 - 1] + changes[changes.length / 2]) / 2
+      : changes[Math.floor(changes.length / 2)];
+
+    // Determine confidence based on agreement
+    let confidence = 'low';
+    if (validValues.length >= 2) {
+      const yieldSpread = Math.max(...yields) - Math.min(...yields);
+      confidence = yieldSpread < 0.1 ? 'high' : yieldSpread < 0.25 ? 'medium' : 'low';
+    } else if (validValues.length === 1) {
+      confidence = 'medium';
+    }
+
+    const assetName = `${name} Yield`;
+    results[assetName] = {
+      close: Math.round(medianYield * 1000) / 1000,
+      bpsChange: Math.round(medianChange),
+      previousClose: medianYield - medianChange / 100,
+      date: validValues[0].date || targetDate,
+      category: 'FIXED INCOME',
+      isYield: true,
+      confidence,
+      sources: validValues.length,
+    };
+  }
+
+  return results;
+}
+
+// Fetch international bond yields using both Gemini and OpenAI with web search
+async function fetchInternationalYields(targetDate, geminiApiKey) {
+  const openaiApiKey = process.env.OPENAI_API_KEY;
+
+  if (!geminiApiKey && !openaiApiKey) {
+    console.log('No API keys for yield fetching, skipping international yields');
     return {};
   }
+
+  // Fetch from both providers in parallel
+  const [geminiYields, openaiYields] = await Promise.all([
+    geminiApiKey ? fetchYieldsFromGemini(geminiApiKey) : Promise.resolve(null),
+    openaiApiKey ? fetchYieldsFromOpenAI(openaiApiKey) : Promise.resolve(null),
+  ]);
+
+  console.log(`Yield sources: Gemini=${geminiYields?.length || 0}, OpenAI=${openaiYields?.length || 0}`);
+
+  // Compute consensus from both sources
+  return computeYieldConsensus(geminiYields, openaiYields, targetDate);
 }
 
 async function fetchVerifiedData(targetDate, apiKey) {
