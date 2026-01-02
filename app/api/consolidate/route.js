@@ -89,12 +89,13 @@ async function fetchYahooChart(symbol, targetDate) {
   }
 }
 
-// Yield fetching prompt - request all tenors for international bonds only
+// Yield fetching prompt - request US 2-Year and international bond yields
 const YIELD_PROMPT = `Search for the current government bond yields. I need yields for these specific bonds:
 
-1. German 2-Year Bund, 10-Year Bund, 30-Year Bund
-2. UK 2-Year Gilt, 10-Year Gilt, 30-Year Gilt
-3. Japan JGB 2-Year, 10-Year, 30-Year
+1. US 2-Year Treasury
+2. German 2-Year Bund, 10-Year Bund, 30-Year Bund
+3. UK 2-Year Gilt, 10-Year Gilt, 30-Year Gilt
+4. Japan JGB 2-Year, 10-Year, 30-Year
 
 For each bond, find:
 - The current yield (as a percentage, e.g., 2.45)
@@ -105,6 +106,7 @@ Search financial sources like investing.com, tradingeconomics.com, bloomberg.com
 Return ONLY a valid JSON object in this exact format, with no other text:
 {
   "yields": [
+    {"name": "US 2-Year", "yield": 4.25, "change": 2, "date": "2025-01-02"},
     {"name": "German 2-Year Bund", "yield": 2.15, "change": 3, "date": "2025-01-02"},
     {"name": "German 10-Year Bund", "yield": 2.45, "change": 5, "date": "2025-01-02"},
     {"name": "German 30-Year Bund", "yield": 2.65, "change": 4, "date": "2025-01-02"},
@@ -468,7 +470,7 @@ OUTPUT FORMAT:
 
 *[One italic sentence summarizing the rates theme]*
 
-• **U.S.** The 10-year yield [USE VERIFIED US 10-YEAR YIELD AND BPS CHANGE]. The 30-year [USE VERIFIED US 30-YEAR YIELD]. [Curve context and Fed expectations].
+• **U.S.** The 2-year yield [USE VERIFIED US 2-YEAR YIELD]. The 10-year yield [USE VERIFIED US 10-YEAR YIELD AND BPS CHANGE]. The 30-year [USE VERIFIED US 30-YEAR YIELD]. [Curve context - note 2s10s spread steepening/flattening and Fed expectations].
 • **Europe** German Bunds [USE VERIFIED GERMAN BUND YIELDS if available]. UK Gilts [USE VERIFIED UK GILT YIELDS if available]. [Note divergence or convergence with US rates, ECB/BOE context].
 • **Asia** JGBs [USE VERIFIED JGB YIELDS if available]. [Note BOJ policy context and any divergence from global rates].
 
@@ -523,7 +525,7 @@ OUTPUT FORMAT:
 
 ## Final Thought
 
-**[A grounded observation].** [1-2 sentences that leave the reader with something to consider.]
+**[A grounded observation that synthesizes the day's key theme].** [3-4 sentences that leave the reader with something meaningful to consider. Connect the dots between the various asset class moves and what they might signal about market psychology or positioning. Offer a forward-looking perspective without making predictions — frame it as what to watch or what questions remain unanswered. End with a thought that encourages the reader to think critically about the narrative versus the data.]
 
 ---
 
