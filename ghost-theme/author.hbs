@@ -2,12 +2,12 @@
 
 <div class="container">
     <header class="page-header author-header">
-        {{#if author.profile_image}}
-            <img class="author-avatar" src="{{author.profile_image}}" alt="{{author.name}}">
+        {{#if primary_author.profile_image}}
+            <img class="author-avatar" src="{{primary_author.profile_image}}" alt="{{primary_author.name}}">
         {{/if}}
-        <h1 class="page-title">{{author.name}}</h1>
-        {{#if author.bio}}
-            <p class="page-description">{{author.bio}}</p>
+        <h1 class="page-title">{{primary_author.name}}</h1>
+        {{#if primary_author.bio}}
+            <p class="page-description">{{primary_author.bio}}</p>
         {{/if}}
     </header>
 
