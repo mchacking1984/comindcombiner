@@ -89,84 +89,124 @@ async function fetchYahooChart(symbol, targetDate) {
   }
 }
 
-// Fetch international bond yields from external yields API
-async function fetchInternationalYields(targetDate) {
-  const yieldsApiUrl = process.env.YIELDS_API_URL;
-  if (!yieldsApiUrl) {
-    console.log('YIELDS_API_URL not configured, skipping international yields');
+// Fetch international bond yields using Gemini with Google Search grounding
+async function fetchInternationalYields(targetDate, apiKey) {
+  if (!apiKey) {
+    console.log('No API key for yield fetching, skipping international yields');
     return {};
   }
 
+  const prompt = `Search for the current government bond yields for Germany, United Kingdom, and Japan. I need the 10-year yields for each country.
+
+For each country, find:
+1. The current yield (as a percentage, e.g., 2.45)
+2. The change from the previous session in basis points (e.g., +5 or -3)
+
+Search financial sources like investing.com, tradingeconomics.com, bloomberg.com, or reuters.com.
+
+Return ONLY a valid JSON object in this exact format, with no other text:
+{
+  "yields": [
+    {"country": "Germany", "name": "German 10-Year Bund", "yield": 2.45, "change": 5, "date": "2025-01-02"},
+    {"country": "United Kingdom", "name": "UK 10-Year Gilt", "yield": 4.62, "change": -3, "date": "2025-01-02"},
+    {"country": "Japan", "name": "JGB 10-Year", "yield": 1.12, "change": 2, "date": "2025-01-02"}
+  ]
+}
+
+Use today's actual data from your search. The "change" should be in basis points (positive or negative integer). The "date" should be the as-of date for the data.`;
+
   try {
-    const response = await fetch(yieldsApiUrl, {
-      headers: { 'Accept': 'application/json' },
-    });
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ role: 'user', parts: [{ text: prompt }] }],
+          tools: [{ googleSearch: {} }],
+          generationConfig: {
+            temperature: 0.1,
+            maxOutputTokens: 1000,
+          },
+        }),
+      }
+    );
 
     if (!response.ok) {
-      console.error(`Yields API error: ${response.status}`);
+      console.error(`Gemini yield fetch error: ${response.status}`);
       return {};
     }
 
     const data = await response.json();
-    if (!data.consensus || !Array.isArray(data.consensus)) {
+
+    // Extract text from response
+    let responseText = '';
+    if (data.candidates?.[0]?.content?.parts) {
+      responseText = data.candidates[0].content.parts
+        .filter(part => part.text)
+        .map(part => part.text)
+        .join('');
+    }
+
+    if (!responseText) {
+      console.error('No response text from Gemini yield fetch');
       return {};
     }
 
-    const results = {};
-
-    // Map API response to our format
-    const countryMapping = {
-      'United States': { prefix: 'US', yields: ['twoYear', 'tenYear', 'thirtyYear'], names: ['2-Year', '10-Year', '30-Year'] },
-      'Germany': { prefix: 'German', yields: ['twoYear', 'tenYear', 'thirtyYear'], names: ['2-Year Bund', '10-Year Bund', '30-Year Bund'] },
-      'United Kingdom': { prefix: 'UK', yields: ['twoYear', 'tenYear', 'thirtyYear'], names: ['2-Year Gilt', '10-Year Gilt', '30-Year Gilt'] },
-      'Japan': { prefix: 'JGB', yields: ['twoYear', 'tenYear', 'thirtyYear'], names: ['2-Year', '10-Year', '30-Year'] },
-    };
-
-    for (const countryData of data.consensus) {
-      const mapping = countryMapping[countryData.country];
-      if (!mapping) continue;
-
-      // Check if the data date is close to target date (within 3 days for weekends/holidays)
-      const asOfDate = countryData.asOfDate;
-      if (asOfDate) {
-        const targetDateObj = new Date(targetDate);
-        const asOfDateObj = new Date(asOfDate);
-        const daysDiff = Math.abs((targetDateObj - asOfDateObj) / (1000 * 60 * 60 * 24));
-        if (daysDiff > 3) {
-          console.log(`Skipping ${countryData.country} yields: data is from ${asOfDate}, target is ${targetDate}`);
-          continue;
-        }
+    // Parse JSON from response (handle markdown code blocks)
+    let jsonStr = responseText;
+    const jsonMatch = responseText.match(/```(?:json)?\s*([\s\S]*?)```/);
+    if (jsonMatch) {
+      jsonStr = jsonMatch[1].trim();
+    } else {
+      // Try to find raw JSON
+      const rawMatch = responseText.match(/\{[\s\S]*"yields"[\s\S]*\}/);
+      if (rawMatch) {
+        jsonStr = rawMatch[0];
       }
+    }
 
-      // Skip US yields from API - we get those from Yahoo Finance
-      if (countryData.country === 'United States') continue;
+    const parsed = JSON.parse(jsonStr);
+    if (!parsed.yields || !Array.isArray(parsed.yields)) {
+      console.error('Invalid yield response structure');
+      return {};
+    }
 
-      // Process each tenor
-      mapping.yields.forEach((tenor, index) => {
-        const tenorData = countryData[tenor];
-        if (tenorData && tenorData.yield !== null && tenorData.yield !== undefined) {
-          const assetName = `${mapping.prefix} ${mapping.names[index]} Yield`;
-          results[assetName] = {
-            close: tenorData.yield,
-            bpsChange: tenorData.change || 0,
-            previousClose: tenorData.yield - (tenorData.change || 0) / 100,
-            date: asOfDate || targetDate,
-            category: 'FIXED INCOME',
-            isYield: true,
-            confidence: tenorData.confidence || 'unknown',
-          };
+    // Convert to our format
+    const results = {};
+    for (const yieldData of parsed.yields) {
+      if (yieldData.yield !== null && yieldData.yield !== undefined) {
+        // Check date is within 3 days of target
+        if (yieldData.date) {
+          const targetDateObj = new Date(targetDate);
+          const asOfDateObj = new Date(yieldData.date);
+          const daysDiff = Math.abs((targetDateObj - asOfDateObj) / (1000 * 60 * 60 * 24));
+          if (daysDiff > 3) {
+            console.log(`Skipping ${yieldData.name}: data is from ${yieldData.date}, target is ${targetDate}`);
+            continue;
+          }
         }
-      });
+
+        const assetName = `${yieldData.name} Yield`;
+        results[assetName] = {
+          close: yieldData.yield,
+          bpsChange: yieldData.change || 0,
+          previousClose: yieldData.yield - (yieldData.change || 0) / 100,
+          date: yieldData.date || targetDate,
+          category: 'FIXED INCOME',
+          isYield: true,
+        };
+      }
     }
 
     return results;
   } catch (err) {
-    console.error('Yields API fetch error:', err.message);
+    console.error('Yield fetch error:', err.message);
     return {};
   }
 }
 
-async function fetchVerifiedData(targetDate) {
+async function fetchVerifiedData(targetDate, apiKey) {
   const results = {};
 
   // Fetch assets from Yahoo Finance
@@ -188,8 +228,8 @@ async function fetchVerifiedData(targetDate) {
     }
   }
 
-  // Fetch international yields from external API and merge
-  const internationalYields = await fetchInternationalYields(targetDate);
+  // Fetch international yields using Gemini with Google Search
+  const internationalYields = await fetchInternationalYields(targetDate, apiKey);
   Object.assign(results, internationalYields);
 
   return results;
@@ -417,8 +457,8 @@ export async function POST(request) {
     if (step === 'consolidate') {
       const { chatgptInput, geminiInput, claudeInput, deepresearchInput } = body;
 
-      // Fetch verified market data
-      const verifiedData = await fetchVerifiedData(targetDate);
+      // Fetch verified market data (pass apiKey for international yield fetching via Gemini)
+      const verifiedData = await fetchVerifiedData(targetDate, apiKey);
       const formattedVerifiedData = formatVerifiedDataForPrompt(verifiedData);
 
       // Build dynamic sections based on which inputs are provided
