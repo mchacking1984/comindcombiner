@@ -216,6 +216,77 @@ ${finalContent}`;
     return html;
   };
 
+  // Copy market data as markdown table for Substack
+  const copyMarketDataTable = async () => {
+    if (!verifiedData) return;
+
+    const sortOrders = {
+      'EQUITIES': ['S&P 500', 'Nasdaq Composite', 'Dow Jones', 'Euro Stoxx 50', 'DAX', 'FTSE 100', 'Russell 2000', 'Nikkei 225', 'Hang Seng', 'VIX'],
+      'FIXED INCOME': ['US 2-Year Yield', 'US 10-Year Yield', 'US 30-Year Yield', 'JGB 2-Year Yield', 'JGB 10-Year Yield', 'JGB 30-Year Yield', 'German 2-Year Bund Yield', 'German 10-Year Bund Yield', 'German 30-Year Bund Yield', 'UK 2-Year Gilt Yield', 'UK 10-Year Gilt Yield', 'UK 30-Year Gilt Yield'],
+      'COMMODITIES': ['Gold', 'Silver', 'Copper', 'WTI Oil', 'Brent Oil'],
+    };
+
+    const categories = ['EQUITIES', 'FIXED INCOME', 'COMMODITIES', 'CURRENCIES', 'DIGITAL ASSETS'];
+    let markdown = `## Market Data for ${formatDate(pulseDate)}\n\n`;
+
+    for (const category of categories) {
+      const items = Object.entries(verifiedData)
+        .filter(([_, data]) => data.category === category)
+        .sort((a, b) => {
+          const order = sortOrders[category];
+          if (order) {
+            const aIdx = order.indexOf(a[0]);
+            const bIdx = order.indexOf(b[0]);
+            const aPos = aIdx === -1 ? 999 : aIdx;
+            const bPos = bIdx === -1 ? 999 : bIdx;
+            return aPos - bPos;
+          }
+          return a[0].localeCompare(b[0]);
+        });
+
+      if (items.length === 0) continue;
+
+      markdown += `### ${category}\n\n`;
+      markdown += `| Asset | Price | Change |\n`;
+      markdown += `|-------|-------|--------|\n`;
+
+      for (const [name, data] of items) {
+        const isYield = data.isYield;
+        const change = isYield ? data.bpsChange : data.percentChange;
+        const isPositive = change >= 0;
+
+        let displayValue;
+        if (isYield) {
+          displayValue = `${data.close.toFixed(3)}%`;
+        } else if (name.includes('/')) {
+          displayValue = data.close.toFixed(4);
+        } else if (data.close > 100) {
+          displayValue = data.close.toLocaleString('en-US', { maximumFractionDigits: 2 });
+        } else {
+          displayValue = data.close.toFixed(2);
+        }
+
+        const changeDisplay = isYield
+          ? `${isPositive ? '+' : ''}${change?.toFixed(1) || '0.0'} bps`
+          : `${isPositive ? '+' : ''}${change?.toFixed(2) || '0.00'}%`;
+
+        const arrow = isPositive ? '↑' : '↓';
+
+        markdown += `| ${name} | ${displayValue} | ${changeDisplay} ${arrow} |\n`;
+      }
+
+      markdown += `\n`;
+    }
+
+    markdown += `*Data sourced via Yahoo Finance and LLM web search. May contain errors.*`;
+
+    try {
+      await navigator.clipboard.writeText(markdown);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  };
+
   // Render markdown for display
   const renderMarkdown = (text) => {
     if (!text) return '';
@@ -418,8 +489,14 @@ ${finalContent}`;
         {/* Verified Data Grid - Below Output */}
         {verifiedData && (
           <div className="mb-6 bg-slate-800 rounded-lg border border-slate-700 overflow-hidden">
-            <div className="px-5 py-4 border-b border-slate-700">
+            <div className="px-5 py-4 border-b border-slate-700 flex items-center justify-between">
               <h3 className="font-semibold text-lg">Market Data for {formatDate(pulseDate)}</h3>
+              <button
+                onClick={copyMarketDataTable}
+                className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 rounded text-sm font-medium transition-colors"
+              >
+                Copy Table for Substack
+              </button>
             </div>
             <div className="p-5">
               {['EQUITIES', 'FIXED INCOME', 'COMMODITIES', 'CURRENCIES', 'DIGITAL ASSETS'].map(category => {
