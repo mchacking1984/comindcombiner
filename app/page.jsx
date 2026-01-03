@@ -253,7 +253,7 @@ ${finalContent}`;
 
         let displayValue;
         if (isYield) {
-          displayValue = `${data.close.toFixed(3)}%`;
+          displayValue = data.close.toFixed(3);
         } else if (name.includes('/')) {
           displayValue = data.close.toFixed(4);
         } else if (data.close > 100) {
