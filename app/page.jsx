@@ -216,7 +216,7 @@ ${finalContent}`;
     return html;
   };
 
-  // Copy market data as markdown table for Substack
+  // Copy market data as TSV (Excel/spreadsheet format) for table generators
   const copyMarketDataTable = async () => {
     if (!verifiedData) return;
 
@@ -227,7 +227,7 @@ ${finalContent}`;
     };
 
     const categories = ['EQUITIES', 'FIXED INCOME', 'COMMODITIES', 'CURRENCIES', 'DIGITAL ASSETS'];
-    let markdown = '';
+    let tsv = 'Asset\tPrice\tChange\n';
 
     for (const category of categories) {
       const items = Object.entries(verifiedData)
@@ -245,10 +245,6 @@ ${finalContent}`;
         });
 
       if (items.length === 0) continue;
-
-      markdown += `**${category}**\n\n`;
-      markdown += `| Asset | Price | Change |\n`;
-      markdown += `|-------|-------|--------|\n`;
 
       for (const [name, data] of items) {
         const isYield = data.isYield;
@@ -272,16 +268,12 @@ ${finalContent}`;
 
         const arrow = isPositive ? '↑' : '↓';
 
-        markdown += `| ${name} | ${displayValue} | ${changeDisplay} ${arrow} |\n`;
+        tsv += `${name}\t${displayValue}\t${changeDisplay} ${arrow}\n`;
       }
-
-      markdown += `\n`;
     }
 
-    markdown += `*Data sourced via Yahoo Finance and LLM web search. May contain errors.*`;
-
     try {
-      await navigator.clipboard.writeText(markdown);
+      await navigator.clipboard.writeText(tsv);
     } catch (err) {
       console.error('Failed to copy:', err);
     }
