@@ -216,7 +216,7 @@ ${finalContent}`;
     return html;
   };
 
-  // Copy market data as HTML table for Substack
+  // Copy market data as markdown table for Substack
   const copyMarketDataTable = async () => {
     if (!verifiedData) return;
 
@@ -227,7 +227,7 @@ ${finalContent}`;
     };
 
     const categories = ['EQUITIES', 'FIXED INCOME', 'COMMODITIES', 'CURRENCIES', 'DIGITAL ASSETS'];
-    let html = '';
+    let markdown = '';
 
     for (const category of categories) {
       const items = Object.entries(verifiedData)
@@ -246,8 +246,9 @@ ${finalContent}`;
 
       if (items.length === 0) continue;
 
-      html += `<h3>${category}</h3>`;
-      html += `<table><thead><tr><th>Asset</th><th>Price</th><th>Change</th></tr></thead><tbody>`;
+      markdown += `**${category}**\n\n`;
+      markdown += `| Asset | Price | Change |\n`;
+      markdown += `|-------|-------|--------|\n`;
 
       for (const [name, data] of items) {
         const isYield = data.isYield;
@@ -270,29 +271,19 @@ ${finalContent}`;
           : `${isPositive ? '+' : ''}${change?.toFixed(2) || '0.00'}%`;
 
         const arrow = isPositive ? '↑' : '↓';
-        const color = isYield
-          ? (isPositive ? '#ef4444' : '#22c55e')
-          : (isPositive ? '#22c55e' : '#ef4444');
 
-        html += `<tr><td>${name}</td><td>${displayValue}</td><td style="color:${color}">${changeDisplay} ${arrow}</td></tr>`;
+        markdown += `| ${name} | ${displayValue} | ${changeDisplay} ${arrow} |\n`;
       }
 
-      html += `</tbody></table><br>`;
+      markdown += `\n`;
     }
 
-    html += `<p><em>*Data sourced via Yahoo Finance and LLM web search. May contain errors.</em></p>`;
+    markdown += `*Data sourced via Yahoo Finance and LLM web search. May contain errors.*`;
 
     try {
-      const blob = new Blob([html], { type: 'text/html' });
-      const plainBlob = new Blob([html], { type: 'text/plain' });
-      await navigator.clipboard.write([
-        new ClipboardItem({
-          'text/html': blob,
-          'text/plain': plainBlob,
-        })
-      ]);
+      await navigator.clipboard.writeText(markdown);
     } catch (err) {
-      await navigator.clipboard.writeText(html);
+      console.error('Failed to copy:', err);
     }
   };
 
