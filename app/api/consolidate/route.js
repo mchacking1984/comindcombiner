@@ -460,9 +460,9 @@ OUTPUT FORMAT:
 
 *[One italic sentence summarizing the equity theme]*
 
-• The **U.S.** [USE VERIFIED S&P 500, Nasdaq, Dow, and Russell 2000 figures]. [Context on sector rotation]. Notable movers: [2-3 significant single-stock moves with brief context - e.g., earnings, guidance, analyst actions].
-• **European** equities [USE VERIFIED Euro Stoxx, DAX, and FTSE figures with context]. Notable movers: [1-2 significant European single-stock moves if available from LLM inputs].
-• In **Asia**, [USE VERIFIED Nikkei and Hang Seng figures with context]. Notable movers: [1-2 significant Asian single-stock moves if available from LLM inputs].
+• The **U.S.** [USE VERIFIED S&P 500, Nasdaq, Dow, and Russell 2000 figures]. [Context on sector rotation]. Notable movers: [2-3 significant US single-stock moves with brief context - e.g., earnings, guidance, analyst actions].
+• **European** equities [USE VERIFIED Euro Stoxx, DAX, and FTSE figures with context]. Notable movers: [1-2 significant European single-stock moves - look for major names like ASML, LVMH, SAP, Shell, Novo Nordisk, etc. with context on why they moved].
+• In **Asia**, [USE VERIFIED Nikkei and Hang Seng figures with context]. Notable movers: [1-2 significant Asian single-stock moves - look for major names like Toyota, Sony, Samsung, Alibaba, Tencent, TSMC, etc. with context on why they moved].
 
 ---
 
